@@ -11,6 +11,6 @@
 4. 全文検索
 1. ExportデータからDB構成
 
-# 構成
+## 構成
 - Clientでメッセージ取得 js
 - DB: GoogleDrive...?
