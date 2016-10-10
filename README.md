@@ -14,3 +14,12 @@
 ## 構成
 - Clientでメッセージ取得 js
 - DB: GoogleDrive...?
+
+## データ
+- channels: spreadsheetの各sheet
+- messages: sheetの各行
+- フィールド: timestamp, account, text
+
+|timestamp|account|text|
+|:-:|:-:|:-:|
+|xxxxxxxxxxx.xxxx|appachan|ウェイソイヤ|
