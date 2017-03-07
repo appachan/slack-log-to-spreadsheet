@@ -1,6 +1,6 @@
 # slack-log-to-spreadsheet
 ## Running this
-1. open [GoogleDrive](https://drive.google.com GoogleDrive).
+1. open [GoogleDrive](https://drive.google.com).
 2. create a new project.
 3. copy app.js.
 4. get your slack team's API token from [here](https://api.slack.com/custom-integrations/legacy-tokens).
