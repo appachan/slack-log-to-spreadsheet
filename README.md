@@ -1,32 +1,24 @@
-# slack-logger-to-spreadsheet
-# パンデパSlackLogger
-## 用途
-- 過去メッセージの参照
-- 範囲はpublic channelのログのみ
-- private channelとDMは無視で
+# slack-log-to-spreadsheet
+## Running this
+1. open [GoogleDrive](https://drive.google.com GoogleDrive).
+2. create a new project.
+3. copy app.js.
+4. get your slack team's API token.
+5. set the token to "slack_api_token" property. 
+6. set a trigger with `run()`.
 
-## 仕様 (優先度 降順)
-2. 新規メッセージを差分で自動取得→DB追記
-3. チャンネル毎に記録、時系列を維持
-4. 全文検索
-1. ExportデータからDB構成
+This app expects `SlackLogs` to be Logs' root directory. 
+If you do not have the directory `SlackLogs`, prease create it.
 
-## 構成
-- Clientでメッセージ取得 js
-- DB: GoogleDrive...?
+ご利用は自己責任でお願いします．
 
-## データ
-- channels: spreadsheetの各sheet
-- messages: sheetの各行
-- フィールド: timestamp, account, text
+## Exported data table
+| ts(Unix)         | ts                  | @user     | text  |
+| :-:              | :-:                 | :-:       |       |
+| xxxxxxxxxxx.xxxx | yyyy/MM/dd HH:mm:ss | @appachan | わかり |
 
-|timestamp|account|text|
-|:-:|:-:|:-:|
-|xxxxxxxxxxx.xxxx|appachan|ウェイソイヤ|
-
-## 予定
-1. あるchannelのメッセージを1枚のシートに挿入
-  1. ファイルがなければ前日までの全てのメッセージを取得
-  2. ファイルがあれば昨日中のメッセージを取得
-2. 1.を複数のchannelに適用してそれぞれシートを作成
-3. Slack公式のエクスポートファイルからログを生成（同じGASアプリ上で実装することでもない？）
+## ToDos
+- [ ] urlのエスケープを解除
+- [ ] プロパティを利用した，ディレクトリのメモ化
+- [ ] @channel(`<!channel>`)等の置換
+- [ ] `シート１`の削除
