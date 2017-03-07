@@ -14,7 +14,7 @@ If you do not have the directory `SlackLogs`, prease create it.
 
 ## Exported data table
 | ts(Unix)         | ts                  | @user     | text  |
-| :-:              | :-:                 | :-:       |       |
+| :-:              | :-:                 | :-:       | :-:   |
 | xxxxxxxxxxx.xxxx | yyyy/MM/dd HH:mm:ss | @appachan | わかり |
 
 ## ToDos
