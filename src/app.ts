@@ -3,7 +3,7 @@ if (!API_TOKEN) {
   throw 'API token not found. You shold set "slack_api_token" property.'
 }
 
-const ROOT_DIR_NAME = 'SlackLogs';
+const ROOT_DIR_NAME = 'SlackLogs'; // ログを保管するルートディレクトリ
 
 interface SlackResponse {
   ok: boolean;
@@ -88,8 +88,7 @@ class SlackChannelHistory {
     let teamInfoResponse = <SlackTeamInfoResponse>this.requestAPI('team.info');
     this.teamName = teamInfoResponse.team.name;
 
-    // ToDo: 日付指定
-    // ToDo: history取得
+    // history取得
     let spreadsheet = this.getSpreadsheet();
     for (let chId in this.channelNames) {
       // シートの取得
@@ -101,7 +100,6 @@ class SlackChannelHistory {
       let options: { [q: string]: string } = {};
       options['channel'] = chId;
       options['oldest'] = oldest;
-      //options['latest'] = latest;
       let messagesResponse = <SlackMessagesResponse>this.requestAPI('channels.history', options);
       // メッセージ整形
       let formattedMessages: FormattedMessage[] = [];
@@ -136,8 +134,8 @@ class SlackChannelHistory {
     return Utilities.formatDate(date, 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss');
   }
 
-  unescapeText(text: string): string {
-    return text
+  unescapeText(text?: string): string {
+    return text || ''
       .replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>')
       .replace(/&quot;/g, '"')
@@ -148,7 +146,6 @@ class SlackChannelHistory {
       })
       .replace(/<@(.+?)\|(.+?)>/g, ($0, p1, p2) => {
         let name = this.memberNames[p1];
-        Logger.log("wei");
         return name ? `@${name}` : $0;
       })
       .replace(/<#(.+?)>/g, ($0, chId) => {
@@ -165,9 +162,7 @@ class SlackChannelHistory {
     return this.memberNames[userId];
   }
 
-  // ToDo: Spread Sheet へアクセス
-  // ディレクトリの取得．メインルーチンでは使わない．
-  // ディレクトリ「SlackLogs」は存在が前提
+  // ディレクトリの取得
   getDir(): GoogleAppsScript.Drive.Folder {
     let dirs = DriveApp.getFolders();
     let resDir;
@@ -181,8 +176,7 @@ class SlackChannelHistory {
     return resDir;
   }
 
-  // スプレッドシートの取得．メインルーチンで使って保持しておく．
-  // チャンネル毎のシートの取得時に使いまわす．
+  // チームのスプレッドシートを取得
   getSpreadsheet(): GoogleAppsScript.Spreadsheet.spreadSheet {
     let spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet;
     let dir = this.getDir();
@@ -191,14 +185,12 @@ class SlackChannelHistory {
       // when spread sheet found.
       let file = fIt.next();
       spreadsheet = SpreadsheetApp.openById(file.getId());
-      //Logger.log('spreadsheet found. So do anything.');
     } else {
       // when spread sheet don't exists.
       spreadsheet = SpreadsheetApp.create(this.teamName);
       let file = DriveApp.getFileById(spreadsheet.getId());
       dir.addFile(file);
       DriveApp.getRootFolder().removeFile(file); // rootに残ったリンクを消す．
-      //Logger.log('spreadsheet not found. So created.');
     }
     return spreadsheet;
   }
@@ -209,11 +201,9 @@ class SlackChannelHistory {
     sheet = spreadsheet.getSheetByName(chName);
     if (sheet != null) {
       // when sheet exists.
-      Logger.log('sheet found. So do anything.');
     } else {
       // when sheet not found.
       sheet = spreadsheet.insertSheet(chName);
-      Logger.log('sheet not found. So created.');
     }
     return sheet;
   }

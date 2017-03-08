@@ -2,7 +2,7 @@ var API_TOKEN = PropertiesService.getScriptProperties().getProperty('slack_api_t
 if (!API_TOKEN) {
     throw 'API token not found. You shold set "slack_api_token" property.';
 }
-var ROOT_DIR_NAME = 'SlackLogs';
+var ROOT_DIR_NAME = 'SlackLogs'; // ログを保管するルートディレクトリ
 var FormattedMessage = (function () {
     function FormattedMessage() {
     }
@@ -40,8 +40,7 @@ var SlackChannelHistory = (function () {
         // get team's name
         var teamInfoResponse = this.requestAPI('team.info');
         this.teamName = teamInfoResponse.team.name;
-        // ToDo: 日付指定
-        // ToDo: history取得
+        // history取得
         var spreadsheet = this.getSpreadsheet();
         var _loop_1 = function(chId) {
             // シートの取得
@@ -53,7 +52,6 @@ var SlackChannelHistory = (function () {
             var options = {};
             options['channel'] = chId;
             options['oldest'] = oldest;
-            //options['latest'] = latest;
             var messagesResponse = this_1.requestAPI('channels.history', options);
             // メッセージ整形
             var formattedMessages = [];
@@ -91,7 +89,7 @@ var SlackChannelHistory = (function () {
     };
     SlackChannelHistory.prototype.unescapeText = function (text) {
         var _this = this;
-        return text
+        return text || ''
             .replace(/&lt;/g, '<')
             .replace(/&gt;/g, '>')
             .replace(/&quot;/g, '"')
@@ -102,7 +100,6 @@ var SlackChannelHistory = (function () {
         })
             .replace(/<@(.+?)\|(.+?)>/g, function ($0, p1, p2) {
             var name = _this.memberNames[p1];
-            Logger.log("wei");
             return name ? "@" + name : $0;
         })
             .replace(/<#(.+?)>/g, function ($0, chId) {
@@ -117,9 +114,7 @@ var SlackChannelHistory = (function () {
     SlackChannelHistory.prototype.unescapeUser = function (userId) {
         return this.memberNames[userId];
     };
-    // ToDo: Spread Sheet へアクセス
-    // ディレクトリの取得．メインルーチンでは使わない．
-    // ディレクトリ「SlackLogs」は存在が前提
+    // ディレクトリの取得
     SlackChannelHistory.prototype.getDir = function () {
         var dirs = DriveApp.getFolders();
         var resDir;
@@ -133,8 +128,7 @@ var SlackChannelHistory = (function () {
         }
         return resDir;
     };
-    // スプレッドシートの取得．メインルーチンで使って保持しておく．
-    // チャンネル毎のシートの取得時に使いまわす．
+    // チームのスプレッドシートを取得
     SlackChannelHistory.prototype.getSpreadsheet = function () {
         var spreadsheet;
         var dir = this.getDir();
@@ -158,13 +152,10 @@ var SlackChannelHistory = (function () {
         var sheet;
         sheet = spreadsheet.getSheetByName(chName);
         if (sheet != null) {
-            // when sheet exists.
-            Logger.log('sheet found. So do anything.');
         }
         else {
             // when sheet not found.
             sheet = spreadsheet.insertSheet(chName);
-            Logger.log('sheet not found. So created.');
         }
         return sheet;
     };
