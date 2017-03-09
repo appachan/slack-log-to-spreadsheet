@@ -54,7 +54,7 @@ interface SlackTeamInfoResponse extends SlackResponse {
 
 class SlackChannelHistory {
   memberNames: { [id: string]: string } = {};
-  channelNames: { [id: string]: string } ={};
+  channelNames: { [id: string]: string } = {};
   teamName: string;
 
   constructor() {
@@ -99,7 +99,7 @@ class SlackChannelHistory {
       // メッセージの取得
       let options: { [q: string]: string } = {};
       options['channel'] = chId;
-      options['oldest'] = oldest;
+      options['oldest'] = oldest + 1; // +1 は取得メッセージの重複を防ぐ 0.1msec以下は内部処理で消されている
       let messagesResponse = <SlackMessagesResponse>this.requestAPI('channels.history', options);
       // メッセージ整形
       let formattedMessages: FormattedMessage[] = [];
@@ -112,8 +112,7 @@ class SlackChannelHistory {
         return [msg.ts, msg.ts_formatted, msg.user, msg.text];
       });
       if (records.length > 0) {
-        let range = sheet.insertRowsAfter(lastRow || 1, records.length)
-                         .getRange(lastRow+1, 1, records.length, 4);
+        let range = sheet.insertRowsAfter(lastRow || 1, records.length).getRange(lastRow+1, 1, records.length, 4);
         range.setValues(records);
       }
     }
@@ -135,7 +134,7 @@ class SlackChannelHistory {
   }
 
   unescapeText(text?: string): string {
-    return text || ''
+    return (text || '')
       .replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>')
       .replace(/&quot;/g, '"')

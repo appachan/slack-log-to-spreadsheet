@@ -51,7 +51,7 @@ var SlackChannelHistory = (function () {
             // メッセージの取得
             var options = {};
             options['channel'] = chId;
-            options['oldest'] = oldest;
+            options['oldest'] = oldest + 1; // +1 は取得メッセージの重複を防ぐ 0.1msec以下は内部処理で消されている
             var messagesResponse = this_1.requestAPI('channels.history', options);
             // メッセージ整形
             var formattedMessages = [];
@@ -64,8 +64,7 @@ var SlackChannelHistory = (function () {
                 return [msg.ts, msg.ts_formatted, msg.user, msg.text];
             });
             if (records.length > 0) {
-                var range = sheet.insertRowsAfter(lastRow || 1, records.length)
-                    .getRange(lastRow + 1, 1, records.length, 4);
+                var range = sheet.insertRowsAfter(lastRow || 1, records.length).getRange(lastRow + 1, 1, records.length, 4);
                 range.setValues(records);
             }
         };
@@ -89,7 +88,7 @@ var SlackChannelHistory = (function () {
     };
     SlackChannelHistory.prototype.unescapeText = function (text) {
         var _this = this;
-        return text || ''
+        return (text || '')
             .replace(/&lt;/g, '<')
             .replace(/&gt;/g, '>')
             .replace(/&quot;/g, '"')
