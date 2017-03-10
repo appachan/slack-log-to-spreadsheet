@@ -91,31 +91,42 @@ class SlackChannelHistory {
     // history取得
     let spreadsheet = this.getSpreadsheet();
     for (let chId in this.channelNames) {
+      let has_more = true;
       // シートの取得
       let sheet = this.getSheet(this.channelNames[chId], spreadsheet);
-      // シートの最新（最下）を取得メッセージの最古に
-      let lastRow = sheet.getLastRow();
-      let oldest = lastRow < 1? 0 : sheet.getRange(lastRow, 1).getValue(); // get the top left cell in last row.
-      // メッセージの取得
-      let options: { [q: string]: string } = {};
-      options['channel'] = chId;
-      options['oldest'] = oldest + 1; // +1 は取得メッセージの重複を防ぐ 0.1msec以下は内部処理で消されている
-      let messagesResponse = <SlackMessagesResponse>this.requestAPI('channels.history', options);
-      // メッセージ整形
-      let formattedMessages: FormattedMessage[] = [];
-      messagesResponse.messages.forEach((msg) => {
-        formattedMessages.push(this.formatMsg(msg));
-      });
-      formattedMessages.reverse();
-      // メッセージ書き込み
-      let records = formattedMessages.map((msg) => {
-        return [msg.ts, msg.ts_formatted, msg.user, msg.text];
-      });
-      if (records.length > 0) {
-        let range = sheet.insertRowsAfter(lastRow || 1, records.length).getRange(lastRow+1, 1, records.length, 4);
-        range.setValues(records);
+      // ログの生成
+      while (has_more) {
+        has_more = this.emitMessages(sheet, chId);
       }
     }
+  }
+
+  // emit history
+  emitMessages(sheet: SpreadsheetApp.Spreadsheet.Sheet, chId: string): boolean {
+    // シートの最新（最下）を取得メッセージの最古に
+    let lastRow = sheet.getLastRow();
+    let oldest = lastRow < 1? 1 : sheet.getRange(lastRow, 1).getValue().replace(/"/, ''); // when set "0", only latest 100 msgs offered.
+    // メッセージの取得
+    let options: { [q: string]: string } = {};
+    options['channel'] = chId;
+    options['oldest'] = oldest;
+    let messagesResponse = <SlackMessagesResponse>this.requestAPI('channels.history', options);
+    // メッセージ整形
+    let formattedMessages: FormattedMessage[] = [];
+    messagesResponse.messages.forEach((msg) => {
+      formattedMessages.push(this.formatMsg(msg));
+    });
+    formattedMessages.reverse();
+    // メッセージ書き込み
+    let records = formattedMessages.map((msg) => {
+      return [`"${msg.ts}"`, msg.ts_formatted, msg.user, msg.text];
+    });
+    if (records.length > 0) {
+      let range = sheet.insertRowsAfter(lastRow || 1, records.length).getRange(lastRow+1, 1, records.length, 4);
+      range.setValues(records);
+    }
+
+    return messagesResponse.has_more;
   }
 
   // format message

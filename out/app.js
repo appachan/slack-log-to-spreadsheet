@@ -42,36 +42,42 @@ var SlackChannelHistory = (function () {
         this.teamName = teamInfoResponse.team.name;
         // history取得
         var spreadsheet = this.getSpreadsheet();
-        var _loop_1 = function(chId) {
-            // シートの取得
-            var sheet = this_1.getSheet(this_1.channelNames[chId], spreadsheet);
-            // シートの最新（最下）を取得メッセージの最古に
-            var lastRow = sheet.getLastRow();
-            var oldest = lastRow < 1 ? 0 : sheet.getRange(lastRow, 1).getValue(); // get the top left cell in last row.
-            // メッセージの取得
-            var options = {};
-            options['channel'] = chId;
-            options['oldest'] = oldest + 1; // +1 は取得メッセージの重複を防ぐ 0.1msec以下は内部処理で消されている
-            var messagesResponse = this_1.requestAPI('channels.history', options);
-            // メッセージ整形
-            var formattedMessages = [];
-            messagesResponse.messages.forEach(function (msg) {
-                formattedMessages.push(_this.formatMsg(msg));
-            });
-            formattedMessages.reverse();
-            // メッセージ書き込み
-            var records = formattedMessages.map(function (msg) {
-                return [msg.ts, msg.ts_formatted, msg.user, msg.text];
-            });
-            if (records.length > 0) {
-                var range = sheet.insertRowsAfter(lastRow || 1, records.length).getRange(lastRow + 1, 1, records.length, 4);
-                range.setValues(records);
-            }
-        };
-        var this_1 = this;
         for (var chId in this.channelNames) {
-            _loop_1(chId);
+            var has_more = true;
+            // シートの取得
+            var sheet = this.getSheet(this.channelNames[chId], spreadsheet);
+            // ログの生成
+            while (has_more) {
+                has_more = this.emitMessages(sheet, chId);
+            }
         }
+    };
+    // emit history
+    SlackChannelHistory.prototype.emitMessages = function (sheet, chId) {
+        var _this = this;
+        // シートの最新（最下）を取得メッセージの最古に
+        var lastRow = sheet.getLastRow();
+        var oldest = lastRow < 1 ? 1 : sheet.getRange(lastRow, 1).getValue().replace(/"/, ''); // when set "0", only latest 100 msgs offered.
+        // メッセージの取得
+        var options = {};
+        options['channel'] = chId;
+        options['oldest'] = oldest;
+        var messagesResponse = this.requestAPI('channels.history', options);
+        // メッセージ整形
+        var formattedMessages = [];
+        messagesResponse.messages.forEach(function (msg) {
+            formattedMessages.push(_this.formatMsg(msg));
+        });
+        formattedMessages.reverse();
+        // メッセージ書き込み
+        var records = formattedMessages.map(function (msg) {
+            return [("\"" + msg.ts + "\""), msg.ts_formatted, msg.user, msg.text];
+        });
+        if (records.length > 0) {
+            var range = sheet.insertRowsAfter(lastRow || 1, records.length).getRange(lastRow + 1, 1, records.length, 4);
+            range.setValues(records);
+        }
+        return messagesResponse.has_more;
     };
     // format message
     SlackChannelHistory.prototype.formatMsg = function (src) {
