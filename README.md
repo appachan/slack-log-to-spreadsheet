@@ -22,3 +22,4 @@ If you do not have the directory `SlackLogs`, prease create it.
 - [ ] プロパティを利用した，ディレクトリのメモ化
 - [ ] @channel(`<!channel>`)等の置換
 - [ ] `シート１`の削除
+- [ ] `has_more`フラグが立った時の再リクエスト処理
