@@ -2,12 +2,9 @@ var API_TOKEN = PropertiesService.getScriptProperties().getProperty('slack_api_t
 if (!API_TOKEN) {
     throw 'API token not found. You shold set "slack_api_token" property.';
 }
-var ROOT_DIR_NAME = 'SlackLogs'; // ログを保管するルートディレクトリ
-var FormattedMessage = (function () {
-    function FormattedMessage() {
-    }
-    return FormattedMessage;
-}());
+// ToDo: コミット時に戻す
+//const ROOT_DIR_NAME = 'SlackLogs'; // ログを保管用のディレクトリ
+var ROOT_DIR_NAME = 'SlackLogsTest'; // ログを保管するルートディレクトリ
 var SlackChannelHistory = (function () {
     function SlackChannelHistory() {
         this.memberNames = {};
@@ -21,8 +18,9 @@ var SlackChannelHistory = (function () {
             baseUrl += "&" + encodeURIComponent(q) + "=" + encodeURIComponent(options[q]);
         }
         var data = JSON.parse(UrlFetchApp.fetch(baseUrl));
-        if (data.error)
+        if (data.error) {
             throw "GET " + apiMethod + ": " + data.error;
+        }
         return data;
     };
     SlackChannelHistory.prototype.run = function () {
@@ -40,24 +38,23 @@ var SlackChannelHistory = (function () {
         // get team's name
         var teamInfoResponse = this.requestAPI('team.info');
         this.teamName = teamInfoResponse.team.name;
-        // history取得
+        // import history
         var spreadsheet = this.getSpreadsheet();
         for (var chId in this.channelNames) {
-            var has_more = true;
-            // シートの取得
+            // get sheet
             var sheet = this.getSheet(this.channelNames[chId], spreadsheet);
-            // ログの生成
+            // emit logs
+            var has_more = true;
             while (has_more) {
                 has_more = this.emitMessages(sheet, chId);
             }
         }
     };
-    // emit history
     SlackChannelHistory.prototype.emitMessages = function (sheet, chId) {
         var _this = this;
         // シートの最新（最下）を取得メッセージの最古に
         var lastRow = sheet.getLastRow();
-        var oldest = lastRow < 1 ? 1 : sheet.getRange(lastRow, 1).getValue().replace(/"/, ''); // when set "0", only latest 100 msgs offered.
+        var oldest = lastRow < 1 ? 1 : sheet.getRange(lastRow, 1).getValue().replace(/"/, ''); // when set "0", only latest 100 msgs offered?
         // メッセージの取得
         var options = {};
         options['channel'] = chId;
@@ -66,7 +63,7 @@ var SlackChannelHistory = (function () {
         // メッセージ整形
         var formattedMessages = [];
         messagesResponse.messages.forEach(function (msg) {
-            formattedMessages.push(_this.formatMsg(msg));
+            formattedMessages.push(_this.formatMessage(msg));
         });
         formattedMessages.reverse();
         // メッセージ書き込み
@@ -80,12 +77,14 @@ var SlackChannelHistory = (function () {
         return messagesResponse.has_more;
     };
     // format message
-    SlackChannelHistory.prototype.formatMsg = function (src) {
-        var msg = new FormattedMessage;
-        msg.ts = src.ts;
-        msg.ts_formatted = this.formatTimeStamp(src.ts);
-        msg.user = this.unescapeUser(src.user);
-        msg.text = this.unescapeText(src.text);
+    SlackChannelHistory.prototype.formatMessage = function (src) {
+        //let msg = new FormattedMessage;
+        var msg = {
+            ts: src.ts,
+            ts_formatted: this.formatTimeStamp(src.ts),
+            user: this.unescapeUserId(src.user),
+            text: this.unescapeText(src.text)
+        };
         return msg;
     };
     SlackChannelHistory.prototype.formatTimeStamp = function (ts) {
@@ -103,20 +102,20 @@ var SlackChannelHistory = (function () {
             var name = _this.memberNames[userId];
             return name ? "@" + name : $0;
         })
-            .replace(/<@(.+?)\|(.+?)>/g, function ($0, p1, p2) {
-            var name = _this.memberNames[p1];
+            .replace(/<@(.+?)\|(.+?)>/g, function ($0, userId) {
+            var name = _this.memberNames[userId];
             return name ? "@" + name : $0;
         })
             .replace(/<#(.+?)>/g, function ($0, chId) {
             var ch = _this.channelNames[chId];
             return ch ? "#" + ch : $0;
         })
-            .replace(/<#(.+?)\|(.+?)>/g, function ($0, p1, p2) {
-            var ch = _this.channelNames[p1];
+            .replace(/<#(.+?)\|(.+?)>/g, function ($0, chId) {
+            var ch = _this.channelNames[chId];
             return ch ? "#" + ch : $0;
         });
     };
-    SlackChannelHistory.prototype.unescapeUser = function (userId) {
+    SlackChannelHistory.prototype.unescapeUserId = function (userId) {
         return this.memberNames[userId];
     };
     // ディレクトリの取得
@@ -125,8 +124,9 @@ var SlackChannelHistory = (function () {
         var resDir;
         while (dirs.hasNext()) {
             resDir = dirs.next();
-            if (resDir.getName() == ROOT_DIR_NAME)
+            if (resDir.getName() == ROOT_DIR_NAME) {
                 break;
+            }
         }
         if (resDir.getName() != ROOT_DIR_NAME) {
             throw "Log's root directory not found. You should make \"" + ROOT_DIR_NAME + "\"";
