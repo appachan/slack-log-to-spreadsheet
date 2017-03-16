@@ -2,9 +2,7 @@ var API_TOKEN = PropertiesService.getScriptProperties().getProperty('slack_api_t
 if (!API_TOKEN) {
     throw 'API token not found. You shold set "slack_api_token" property.';
 }
-// ToDo: コミット時に戻す
-//const ROOT_DIR_NAME = 'SlackLogs'; // ログを保管用のディレクトリ
-var ROOT_DIR_NAME = 'SlackLogsTest'; // ログを保管するルートディレクトリ
+var ROOT_DIR_NAME = 'SlackLogs'; // ログを保管用のディレクトリ
 var SlackChannelHistory = (function () {
     function SlackChannelHistory() {
         this.memberNames = {};
