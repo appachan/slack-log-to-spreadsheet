@@ -3,7 +3,9 @@ if (!API_TOKEN) {
   throw 'API token not found. You shold set "slack_api_token" property.'
 }
 
-const ROOT_DIR_NAME = 'SlackLogs'; // ログを保管するルートディレクトリ
+// ToDo: コミット時に戻す
+//const ROOT_DIR_NAME = 'SlackLogs'; // ログを保管用のディレクトリ
+const ROOT_DIR_NAME = 'SlackLogsTest'; // ログを保管するルートディレクトリ
 
 interface SlackResponse {
   ok: boolean;
@@ -26,7 +28,7 @@ interface SlackMessage {
   text: string;
 }
 
-class FormattedMessage {
+interface FormattedMessage {
   ts: string;
   ts_formatted: string;
   user: string;
@@ -67,7 +69,9 @@ class SlackChannelHistory {
       baseUrl += `&${encodeURIComponent(q)}=${encodeURIComponent(options[q])}`;
     }
     let data = <SlackResponse>JSON.parse(UrlFetchApp.fetch(baseUrl));
-    if (data.error) throw `GET ${apiMethod}: ${data.error}`;
+    if (data.error) {
+      throw `GET ${apiMethod}: ${data.error}`;
+    }
     return data;
   }
 
@@ -88,24 +92,23 @@ class SlackChannelHistory {
     let teamInfoResponse = <SlackTeamInfoResponse>this.requestAPI('team.info');
     this.teamName = teamInfoResponse.team.name;
 
-    // history取得
+    // import history
     let spreadsheet = this.getSpreadsheet();
     for (let chId in this.channelNames) {
-      let has_more = true;
-      // シートの取得
+      // get sheet
       let sheet = this.getSheet(this.channelNames[chId], spreadsheet);
-      // ログの生成
+      // emit logs
+      let has_more = true;
       while (has_more) {
         has_more = this.emitMessages(sheet, chId);
       }
     }
   }
 
-  // emit history
   emitMessages(sheet: SpreadsheetApp.Spreadsheet.Sheet, chId: string): boolean {
     // シートの最新（最下）を取得メッセージの最古に
     let lastRow = sheet.getLastRow();
-    let oldest = lastRow < 1? 1 : sheet.getRange(lastRow, 1).getValue().replace(/"/, ''); // when set "0", only latest 100 msgs offered.
+    let oldest = lastRow < 1? 1 : sheet.getRange(lastRow, 1).getValue().replace(/"/, ''); // when set "0", only latest 100 msgs offered?
     // メッセージの取得
     let options: { [q: string]: string } = {};
     options['channel'] = chId;
@@ -114,7 +117,7 @@ class SlackChannelHistory {
     // メッセージ整形
     let formattedMessages: FormattedMessage[] = [];
     messagesResponse.messages.forEach((msg) => {
-      formattedMessages.push(this.formatMsg(msg));
+      formattedMessages.push(this.formatMessage(msg));
     });
     formattedMessages.reverse();
     // メッセージ書き込み
@@ -125,17 +128,18 @@ class SlackChannelHistory {
       let range = sheet.insertRowsAfter(lastRow || 1, records.length).getRange(lastRow+1, 1, records.length, 4);
       range.setValues(records);
     }
-
     return messagesResponse.has_more;
   }
 
   // format message
-  formatMsg(src: SlackMessage): FormattedMessage {
-    let msg = new FormattedMessage;
-    msg.ts = src.ts;
-    msg.ts_formatted = this.formatTimeStamp(src.ts);
-    msg.user = this.unescapeUser(src.user);
-    msg.text = this.unescapeText(src.text);
+  formatMessage(src: SlackMessage): FormattedMessage {
+    //let msg = new FormattedMessage;
+    let msg: FormattedMessage = {
+      ts: src.ts,
+      ts_formatted: this.formatTimeStamp(src.ts),
+      user: this.unescapeUserId(src.user),
+      text: this.unescapeText(src.text)
+    }
     return msg;
   }
 
@@ -154,21 +158,21 @@ class SlackChannelHistory {
         let name = this.memberNames[userId];
         return name ? `@${name}` : $0;
       })
-      .replace(/<@(.+?)\|(.+?)>/g, ($0, p1, p2) => {
-        let name = this.memberNames[p1];
+      .replace(/<@(.+?)\|(.+?)>/g, ($0, userId) => {
+        let name = this.memberNames[userId];
         return name ? `@${name}` : $0;
       })
       .replace(/<#(.+?)>/g, ($0, chId) => {
         let ch = this.channelNames[chId];
         return ch ? `#${ch}` : $0;
       })
-      .replace(/<#(.+?)\|(.+?)>/g, ($0, p1, p2) => {
-        let ch = this.channelNames[p1];
+      .replace(/<#(.+?)\|(.+?)>/g, ($0, chId) => {
+        let ch = this.channelNames[chId];
         return ch ? `#${ch}` : $0;
       });
   }
 
-  unescapeUser(userId: string): string {
+  unescapeUserId(userId: string): string {
     return this.memberNames[userId];
   }
 
@@ -178,7 +182,9 @@ class SlackChannelHistory {
     let resDir;
     while (dirs.hasNext()) {
       resDir = dirs.next();
-      if (resDir.getName() == ROOT_DIR_NAME) break;
+      if (resDir.getName() == ROOT_DIR_NAME) {
+        break;
+      }
     }
     if (resDir.getName() != ROOT_DIR_NAME) {
       throw `Log's root directory not found. You should make "${ROOT_DIR_NAME}"`;
