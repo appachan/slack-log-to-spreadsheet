@@ -66,7 +66,7 @@ var SlackChannelHistory = (function () {
         formattedMessages.reverse();
         // メッセージ書き込み
         var records = formattedMessages.map(function (msg) {
-            return [("\"" + msg.ts + "\""), msg.ts_formatted, msg.user, msg.text];
+            return ["\"" + msg.ts + "\"", msg.ts_formatted, msg.user, msg.text];
         });
         if (records.length > 0) {
             var range = sheet.insertRowsAfter(lastRow || 1, records.length).getRange(lastRow + 1, 1, records.length, 4);

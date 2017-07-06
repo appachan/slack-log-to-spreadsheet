@@ -1,0 +1,10 @@
+{
+  "name": "slack-log-to-spreadsheet",
+  "version": "1.0.0",
+  "main": "out/app.js",
+  "repository": "https://github.com/appachan/slack-log-to-spreadsheet.git",
+  "license": "MIT",
+  "dependencies": {
+    "@types/google-apps-script": "^0.0.13"
+  }
+}

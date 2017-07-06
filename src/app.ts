@@ -102,7 +102,7 @@ class SlackChannelHistory {
     }
   }
 
-  emitMessages(sheet: SpreadsheetApp.Spreadsheet.Sheet, chId: string): boolean {
+  emitMessages(sheet: GoogleAppsScript.Spreadsheet.Sheet, chId: string): boolean {
     // シートの最新（最下）を取得メッセージの最古に
     let lastRow = sheet.getLastRow();
     let oldest = lastRow < 1? 1 : sheet.getRange(lastRow, 1).getValue().replace(/"/, ''); // when set "0", only latest 100 msgs offered?
@@ -190,7 +190,7 @@ class SlackChannelHistory {
   }
 
   // チームのスプレッドシートを取得
-  getSpreadsheet(): GoogleAppsScript.Spreadsheet.spreadSheet {
+  getSpreadsheet(): GoogleAppsScript.Spreadsheet.Spreadsheet {
     let spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet;
     let dir = this.getDir();
     let fIt = dir.getFilesByName(this.teamName);
@@ -209,7 +209,7 @@ class SlackChannelHistory {
   }
 
   // 各チャンネルに対応したシートを取得
-  getSheet(chName: string, spreadsheet: GoogleAppsScript.Spreadsheet.spreadSheet) {
+  getSheet(chName: string, spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet) {
     let sheet: GoogleAppsScript.Spreadsheet.Sheet;
     sheet = spreadsheet.getSheetByName(chName);
     if (sheet != null) {
